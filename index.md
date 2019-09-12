@@ -6,7 +6,7 @@ The goal of this document is to describe how SSRV implements out-of-order and su
 
 SSRV is based on 4 different multiple-in, multiple-out buffers connected with each other. The central of them is built in “schedule” module, which has “FETCH_LEN” inputs, “EXEC_LEN” outputs and a capacity of “SDBUF_LEN” instructions.
 
-![diagram](https://github.com/risclite/risclite.github.io/blob/master/png/diagram.png)
+![diagram](/png/diagram.png)
 
 If these 3 parameters are given different values, this core will show different Dhrystone Benchmark scores. The next table will list how these key parameters produces different performance cores.
 
@@ -58,7 +58,7 @@ If you want to utilize SSRV to build a high-performance CPU core of your own, ju
 
 ### An example on how instructions are managed
 
-![diagram](https://github.com/risclite/risclite.github.io/blob/master/png/diagram.png)
+![diagram](/png/diagram.png)
 
 Let's take an example to discuss how hinstructions are managed. 
 
@@ -119,7 +119,7 @@ The basic component of SSRV is a multiple-in, multiple-out buffer, which has a c
 
 It has three parameters: IN_LEN, which defines how many elements are coming in from outside; BUF_LEN, which define the maximum elements could be accommodated; OUT_LEN, which define how many elements are going out.
 
-![Multiple-in, multiple-out buffer](https://github.com/risclite/risclite.github.io/blob/master/png/ProjBuffer.PNG)
+![Multiple-in, multiple-out buffer](/png/ProjBuffer.PNG)
 
 Different parameters lead to different capabilities of the buffer. Because of unpredictable condition on processing instructions, this kind of buffer is very helpful in keeping instructions. 
 
