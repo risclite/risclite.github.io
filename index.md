@@ -6,7 +6,7 @@ The goal of this document is to describe how SSRV implements out-of-order and su
 
 SSRV is based on 4 different multiple-in, multiple-out buffers connected with each other. The central of them is built in “schedule” module, which has “FETCH_LEN” inputs, “EXEC_LEN” outputs and a capacity of “SDBUF_LEN” instructions.
 
-![diagram](https://github.com/risclite/SuperScalar-RISCV-CPU/blob/master/wiki/png/diagram.png)
+![diagram](https://github.com/risclite/risclite.github.io/blob/master/png/diagram.png)
 
 If these 3 parameters are given different values, this core will show different Dhrystone Benchmark scores. The next table will list how these key parameters produces different performance cores.
 
@@ -56,9 +56,9 @@ All files of SSRV are synthesizable and aimed to provide a high-performance core
 If you want to utilize SSRV to build a high-performance CPU core of your own, just modify “sys_csr.v” to have your own system control solution and combine that with other files to be your high-performance core. You are free to choose appropriate parameters, which will give your balance between performance and logic cell cost.
 
 
-###An example on how instructions are managed
+### An example on how instructions are managed
 
-![diagram](https://github.com/risclite/SuperScalar-RISCV-CPU/blob/master/wiki/png/diagram.png)
+![diagram](https://github.com/risclite/risclite.github.io/blob/master/png/diagram.png)
 
 Let's take an example to discuss how hinstructions are managed. 
 
@@ -113,13 +113,13 @@ The instruction 139a will have a different destination: mprf module. The inner b
     
 These 3 instructions will not be allowed to write to the register file: R1~R31 directly. The instruction 13a4 are operating the data bus now, and we do not know whether it will be successful. If it fails, instructions following it will cause mess when an exception occurs. There must be a choose from the buffer, and only instuctions ahead of the instruction: 13a4 have possiblity to write to the register file. The instructions following it will have to wait for the acknowlegement of data bus in the buffer. After that, they will be allowed to write to the register file.
 
-###Multiple-in, Multiple-out Buffer
+### Multiple-in, Multiple-out Buffer
 
 The basic component of SSRV is a multiple-in, multiple-out buffer, which has a capacity of multiple elements.
 
 It has three parameters: IN_LEN, which defines how many elements are coming in from outside; BUF_LEN, which define the maximum elements could be accommodated; OUT_LEN, which define how many elements are going out.
 
-![Multiple-in, multiple-out buffer](https://github.com/risclite/SuperScalar-RISCV-CPU/blob/master/wiki/png/ProjBuffer.PNG)
+![Multiple-in, multiple-out buffer](https://github.com/risclite/risclite.github.io/blob/master/png/ProjBuffer.PNG)
 
 Different parameters lead to different capabilities of the buffer. Because of unpredictable condition on processing instructions, this kind of buffer is very helpful in keeping instructions. 
 
@@ -139,7 +139,7 @@ Here is some definitions of input arrays.
     wire `N(IN_LEN*XLEN)  in_instr;
     wire `N(IN_LEN*XLEN)  in_pc;
     
-“N(n)” is a Verilog definition: `define N(n)        [(n)-1:0].
+“N(n)” is a Verilog definition: \`define N(n)        [(n)-1:0].
 
 If in_vld is the form like this: ‘b1, ‘b111, ‘b1111, it is easy to combine it with the buffer like this: 
 
