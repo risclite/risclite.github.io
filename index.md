@@ -192,6 +192,7 @@ When the slave is sure that it could contain the maximum of incoming, the slave 
 The master is initiative and it will always give the slave elements as many as possible. The slave should answer how many are acceptted acutally. The master will abandon them and make sure that it will send the closest elements in the next cycle. There is an interaction between them.
 
 * Father mode
+
 The master is aware how many elements are needed by the slave. It will send adequate number of elements to the slave. There is no interaction and the slave just accepts its coming elements. The slave need not worry about overflow. 
 
 
