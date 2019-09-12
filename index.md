@@ -1,4 +1,4 @@
-## Welcome to SSRV tutorial ---------[PDF](/pdf/tutorial-ssrv.pdf)
+## Welcome to SSRV tutorial ---------download:[PDF](/pdf/tutorial-ssrv.pdf)
 
 ### Overview
 
