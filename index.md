@@ -1,4 +1,6 @@
-## SSRV(Super-Scalar Out-of-order RV32IMC) tutorial -------------[PDF version](/pdf/tutorial-ssrv.pdf)
+## SSRV(Super-Scalar Out-of-order RV32IMC) tutorial 
+
+[```PDF version```](/pdf/tutorial-ssrv.pdf)
 
 ### Overview
 
