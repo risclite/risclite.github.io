@@ -1,6 +1,6 @@
 ## SSRV(Super-Scalar Out-of-order RV32IMC) tutorial 
 
-[```PDF version```](/pdf/tutorial-ssrv.pdf)
+[```PDF version```](/pdf/tutorial-ssrv.pdf)   [```Github Repository```](https://github.com/risclite/SuperScalar-RISCV-CPU/)
 
 ### Overview
 
