@@ -183,16 +183,13 @@ The Verilog style of describing the multiple-in, multiple-out buffer here will  
 
 Let's consider how to connect two buffers. Their connections can have 3 styles.
 
-*Orphan mode
-
+* Orphan mode
     When the slave is sure that it could contain the maximum of incoming, the slave give a signal of fetching to the master. No matter how many is coming actually, there is no problem of overflow. The slave is initiative and the master does not need to know how many elements are kept in the slave.
 
-*Mother mode
-
+* Mother mode
     The master is initiative and it will always give the slave elements as many as possible. The slave should answer how many are acceptted acutally. The master will abandon them and make sure that it will send the closest elements in the next cycle. There is an interaction between them.
 
-*Father mode
-
+* Father mode
     The master is aware how many elements are needed by the slave. It will send adequate number of elements to the slave. There is no interaction and the slave just accepts its coming elements. The slave need not worry about overflow. 
 
 These 3 styles are all used in SSRV. 
@@ -210,7 +207,7 @@ It is not possible to retire two mem instructions when there is only one data bu
 
 The alu instructions could be called "minor" instructions. When they have a chance to be executed, their destination register numbers and updating data are queued in the buffer, until their previous mem instructions are all retired. It is necessary to make sure no invasion to the register file from its following alu instructions when an exception occurs.
 
-|     |alu0	|alu1	mem0    |alu2	|alu3	|mem1	|alu4  |
+|     |alu0	|alu1  |mem0    |alu2	|alu3	|mem1	|alu4  |
 |-----|-----|------|--------|-------|-------|-------|------|
 |order|	0   |	0  |	1   |	1   |1      |	2   | 2    |
 
@@ -220,14 +217,15 @@ Every cycle, SSRV tries to retire one mem instruction and multiple alu instructi
 
 So, there are two basic kinds of instructions:
 
-*alu: only related with the registers:R1~R31, includes: OP/OP-IMM of RV32IC
+* alu: only related with the registers:R1~R31, includes: OP/OP-IMM of RV32IC
 
-*mem: load and store instructions
+* mem: load and store instructions
 
 However, there are two kinds of instructions, which will have to be dealed with as the same as mem instructions.They are:
 
-*mul: multiply-divide instructions.
-*csr: exchange data between CSR and general-purpose registers.
+* mul: multiply-divide instructions.
+
+* csr: exchange data between CSR and general-purpose registers.
 
 The mul instructions wll have multiple cycle to be executed. Each mem instruction will also need varied cycles to complete. In case of that, the mul instruction can be treated as one special memory-loading instruction. 
 
@@ -237,14 +235,21 @@ These two kinds of instructions will have their own exclusive cycle to complete 
  
 MEM and ALU instructions can be scheduled out-of-order, which means its following instructions could be issued before it does. Instructions introduced next are not allowed because its following ones are disabled permanently or temporarily.
 
-*err : error occurs when fetching this instruction, treated as a special instruction.
-*illegal: fetching successfully, but it does not belong any defined RV32 instructions.
-*fencei:  one kind of RV32I instructions
-*fence : one kind of RV32I instructions.
-*sys : system instructions, often related to CSR, such as: break, call.
-*jalr : jump instructions, target address is provided by one general-purpose register.
-*jal : jump instructions, target address is related to PC.
-*jcond: conditional jump instructions.
+* err : error occurs when fetching this instruction, treated as a special instruction.
+
+* illegal: fetching successfully, but it does not belong any defined RV32 instructions.
+
+* fencei:  one kind of RV32I instructions
+
+* fence : one kind of RV32I instructions.
+
+* sys : system instructions, often related to CSR, such as: break, call.
+
+* jalr : jump instructions, target address is provided by one general-purpose register.
+
+* jal : jump instructions, target address is related to PC.
+
+* jcond: conditional jump instructions.
 
 These 8 kinds of instructions are named “SPECIAL” instructions.
 
