@@ -113,7 +113,7 @@ The instruction 139a will have a different destination: mprf module. The inner b
     1396:	01efc333          	xor	t1,t6,t5
     13a0:	007fff93          	andi	t6,t6,7
     
-These 3 instructions will not be allowed to write to the register file: R1~R31 directly. The instruction 13a4 are operating the data bus now, and we do not know whether it will be successful. If it fails, instructions following it will cause mess when an exception occurs. There must be a choose from the buffer, and only instuctions ahead of the instruction: 13a4 have possiblity to write to the register file. The instructions following it will have to wait for the acknowlegement of data bus in the buffer. After that, they will be allowed to write to the register file.
+These 3 instructions will not write to the register file: R1~R31 directly. The instruction 13a4 is operating the data bus now, and we do not know whether it will be successful. Every ALU instructions queued here should be checked whether it is ahead of the address 13a4. Only instructions ahead of it are allowed to write to the register file. The instructions following it will have to wait for the acknowledgement of data bus, and then they have a new chance to check whether its address is ahead of the new MEM instruction operating the data bus.
 
 ### Multiple-in, Multiple-out Buffer
 
