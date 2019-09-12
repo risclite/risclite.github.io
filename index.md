@@ -181,4 +181,80 @@ Eventually, there are new arrays: chain_vld[IN_LEN], chain_instr[IN_LEN], chain_
 The Verilog style of describing the multiple-in, multiple-out buffer here will  lead us undstanding how to fliter an array or split this array into two different arrays. It is a necessary method to manage an array.
 
 
+Let's consider how to connect two buffers. Their connections can have 3 styles.
+
+*Orphan mode
+
+    When the slave is sure that it could contain the maximum of incoming, the slave give a signal of fetching to the master. No matter how many is coming actually, there is no problem of overflow. The slave is initiative and the master does not need to know how many elements are kept in the slave.
+
+*Mother mode
+
+    The master is initiative and it will always give the slave elements as many as possible. The slave should answer how many are acceptted acutally. The master will abandon them and make sure that it will send the closest elements in the next cycle. There is an interaction between them.
+
+*Father mode
+
+    The master is aware how many elements are needed by the slave. It will send adequate number of elements to the slave. There is no interaction and the slave just accepts its coming elements. The slave need not worry about overflow. 
+
+These 3 styles are all used in SSRV. 
+
+The buffer of "instrbits" will store instructions from instruction memory. It fetches instructions when the empty space of this buffer is enough. Its connections to the instruction memory is a style of "orphan" mode.
+
+The buffer of "instrbits" will provide instructions to the buffer of "schedule". The module "schedule" will try to issue instructions as much as it can, but it will not be sure how many are issued successfully. It needs the buffer of "instrbits" gives the maximum number of instructions, and it will return how many are issued to the next stage or kept in its buffer. The connections between them are "mother" mode.
+
+The module "schedule" is aware of the empty space of both the buffers of "membuf" and "mprf". They are necessory to help it issue how many "OP/OP-IMM" instucutions or "MEM" instructions. It will make sure that its schedule is satisfied by all its slaves. The buffers of "membuf" and "mprf" need not consider the problem of overflow and it is a problem of the module "schedule". Their connections are "father" mode.
+
+### Instructions
+
+SSRV has two buffers to handle two different kinds of instructions. One is for alu instructions in the "mprf" module, which are OP or OP-IMM instructions of RV32IC. The other is for mem instructions in the "membuf" module, which are ones related with memory operation.
+It is not possible to retire two mem instructions when there is only one data bus. The buffer of "membuf" module gathers some mem instructions and issue one of them in every cycle. Each of them is possible to cause an exception when data bus reports error. The mem instructions could be called "major" instructions.
+
+The alu instructions could be called "minor" instructions. When they have a chance to be executed, their destination register numbers and updating data are queued in the buffer, until their previous mem instructions are all retired. It is necessary to make sure no invasion to the register file from its following alu instructions when an exception occurs.
+
+|     |alu0	|alu1	mem0    |alu2	|alu3	|mem1	|alu4  |
+|-----|-----|------|--------|-------|-------|-------|------|
+|order|	0   |	0  |	1   |	1   |1      |	2   | 2    |
+
+To distinguish alu instructions, there is a method that is to give every instructions one order. When the current instruction is one of mem instructions, its order will plus one, or keep the same. The first mem instructions of the "membuf" buffer will always have an order: 1, which is the current instruction operating the data bus. Instructions, which have the order 0, will be allowed to update the register file. If the current mem instruction is reporting successful, the order of each alu instruction will decrease one until it reaches 0. That a mem instruction retires successfully will bring more alu instructions with "0" order.
+
+Every cycle, SSRV tries to retire one mem instruction and multiple alu instructions. According to their empty space of both buffers, "schedule" module will issue indefinite instructions and try to fill these two buffers.
+
+So, there are two basic kinds of instructions:
+
+*alu: only related with the registers:R1~R31, includes: OP/OP-IMM of RV32IC
+
+*mem: load and store instructions
+
+However, there are two kinds of instructions, which will have to be dealed with as the same as mem instructions.They are:
+
+*mul: multiply-divide instructions.
+*csr: exchange data between CSR and general-purpose registers.
+
+The mul instructions wll have multiple cycle to be executed. Each mem instruction will also need varied cycles to complete. In case of that, the mul instruction can be treated as one special memory-loading instruction. 
+
+The csr instruction will exchange one general-purpose register with one CSR register. It could be treated as one special mem instruction: loading and storing in the same cycle.
+
+These two kinds of instructions will have their own exclusive cycle to complete operation. Below, MEM means three kind of instructions: mem, mul and csr, which are dedicated to the “membuf” module. ALU means alu instructions, whose operation result enters the “mprf” module.
+ 
+MEM and ALU instructions can be scheduled out-of-order, which means its following instructions could be issued before it does. Instructions introduced next are not allowed because its following ones are disabled permanently or temporarily.
+
+*err : error occurs when fetching this instruction, treated as a special instruction.
+*illegal: fetching successfully, but it does not belong any defined RV32 instructions.
+*fencei:  one kind of RV32I instructions
+*fence : one kind of RV32I instructions.
+*sys : system instructions, often related to CSR, such as: break, call.
+*jalr : jump instructions, target address is provided by one general-purpose register.
+*jal : jump instructions, target address is related to PC.
+*jcond: conditional jump instructions.
+
+These 8 kinds of instructions are named “SPECIAL” instructions.
+
+When the “schedule” module initializes a scheduling process between “SDBUF_LEN” number of instructions, SPECIAL instructions should be treated as the last one because its following ones cannot be executed unless they are retired. Also, it is not possible that two of SPECIAL instructions exist in the same list of the “schedule” module.
+
+SPECIAL instructions can have two processing styles just like MEM and ALU ones do. 
+
+“jalr, jal, jcond” are ALU-like SPECIAL instructions. One of them could change PC to its target address and make instructions of the target address queued after instructions ahead of this jump instruction. It can trigger jump operation before some MEM instructions ahead of it are queued.
+
+The others are MEM-like SPECIAL instructions. One of them will wait until all MEM instructions ahead of it are retired successfully. It involves with changing some CSRs and it is not revoked. So, it should be treated as one of MEM instruction. 
+
+
 
