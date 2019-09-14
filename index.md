@@ -339,6 +339,165 @@ Err, illegal, fencei, fence, sys instructions and csr ones are dealt with in thi
 Every module serves one purpose that is to make the “schedule” module dispatches instructions as many as possible. The “instrbits” buffer will accumulate more instructions. The other two buffer will have to clean their reverse to welcome new ones.  
 
 
+### instrman
+
+Please open rtl/instrman.v and review it, the next lists are helpful.
+
+* Manage different jump-starting signals, form one integration set of jump signals: jump_vld, jump_pc.
+
+* “buffer_free” is a signal that means the preliminary buffer is free to accept new coming instructions. This module will fire fetching operation until it turns to low level or a jump signal asserts.
+
+* “req_sent” is used to indicate a fetching request has been sent. If there is no fetching request started, a new fetching request could be initialized in any cycle; if a fetching request has been sent, the next fetching request will have to wait for the acknowledgement of “imem_resp” and after that, the new fetching request can be started. A logic expression: ~req_sent & imem_resp is used to express when to start a new fetching request.
+
+* “line_requested” is a signal to indicate “imem_rdata” is a valid cluster of instructions. Only when a fetching request has been sent and “imem_resp” is OK, “imem_rdata” is valid to be forwarded to the buffer.
+
+### instrbits
+
+Please open rtl/instrbits.v.
+
+It has a preliminary buffer to store “imem_rdata” and provides “FETCH_LEN” number of instructions from the buffer.
+
+    output `N(`FETCH_LEN)              fetch_vld,
+    output `N(`FETCH_LEN*`XLEN)        fetch_instr,
+    output `N(`FETCH_LEN*`XLEN)        fetch_pc,
+    output `N(`FETCH_LEN)              fetch_err,
+    input  `N(`FETCH_OFF)              fetch_offset
+
+The output signals of fetch_\* are arrays of different information. “vld” is for valid signals of every element; “instr” is for an instruction; “pc” is for a PC address; “err” is for error indication. When this module sends fetch_* to the next module, it expects a return signal: “fetch_offset”, which means how many instructions are taken in and it is safe to eliminate them.
+
+If a jump signal fires a fetching request, the jump target address is not always aligned. SSRV support multiple-word fetching style and it is necessary to remove redundant misaligned half-words from “imem_rdata”.
+
+After that, incoming half-words and half-words stored join together. After removing “fetch_offset” number of instructions, the reset of them will stay in the buffer.
+
+The union of half-words incoming and stored will be analyzed to form “FETCH_LEN” number of instructions.
+
+### schedule
+
+Please open rtl/schedule.v. This file is the most important Verilog RTL file of SSRV.
+
+The input signals of “instrbits” are a few arrays of “fetch_\*”. At first, two new arrays of “fetch_\*” are added to give each instruction a “para”, which indicates which kinds of instructions it belongs to; a “order”, how many MEM instructions are preceding and not retired. MEM instructions in services are from two module: one is “schedule” module itself, the other is “membuf”, which gathers multiple ones queued.
+
+How many numbers of instructions of “instrbits” are accepted depends on three factors:
+
+* How many numbers are sent from “instrbits”
+
+* How many space is left by the buffer of “schedule”, it is “ `SDBUF_LEN – sdbuf_length”.
+
+* Whether there is one SPECIAL instruction exist.
+
+A logical expression will show these 3 factors: 
+
+    ( fetch_vld & sdbuf_left_vld & fetch_pick_flag[FETCH_LEN-1:0] )
+
+However, if a SPECIAL instruction exists in the buffer of “schedule”, no instruction will be taken in.
+
+To solve the problem of parallel execution, two incremental variables are added: rs_list[i] and rd_list[i]. Every instruction is a function with its one or two inputs: Rs0, Rs1; and one output: Rd. Two or more instructions can be executed together if their registers of Rs or Rd are different. Anyway, there are 31 registers, which can serve several instructions in the same cycle.
+
+Assuming one in-order processor, an instruction with Rs and Rd, is permitted to be executed, which will give following instructions a restriction: their Rs and Rd should not be its Rd. “rs_list” is the restriction register list of Rs; and “rd_list” is the restriction register list of Rd. Any preceding instruction not retired will append its Rs and Rd to these two lists according to whether it is issued to be executed.
+
+If it is issued, its Rs has been referred, and Rs will not be a problem. Only Rd will be appended to “rs_list” and “rd_list”, because the register of Rd is changing and it should not be Rs or Rd of the following instructions. 
+
+If it is hung up, which means its Rs has not been referred, Rd of the following instructions can not be Rs of this stalling instruction. It is necessary to append Rs and Rd of the stalling instruction to “rd_list”, and to append Rd to “rs_list”.
+
+In the main “generate” statements, “hit” is used to indicate whether Rs and Rd of current instruction is appeared in “rs_list” and “rd_list”. “hit” will a key factor to permit the current instruction to be executed. The bellow is some factor to permit the current instruction to be executed:
+
+* hit: Rs and Rd register factor
+
+* mem_not_exec[i]: Whether one MEM instruction is stayed in the buffer. If yes, no other MEM instruction is allowed to be executed, because MEM instructions should be kept in-order strictly.
+
+* (exec_num[i]==\`EXEC_LEN): exec_num[i] is a signal to indicate how many instructions are scheduled. Its total number should not exceed the maximum.
+
+* (mem_num[i]==\`MMBUF_LEN):  The initial number of mem_num[i] is how many instructions are contained in the “membuf” buffer. When one MEM instruction joins the execution list, mem_num[i] pluses one. If the “membuf” buffer is full, no more MEM instruction is permitted.
+
+* (rf_num[i]==\`RFBUF_LEN):  The initial number of rf_num[i] is how many instructions are contained in the “mprf” buffer. When one ALU instruction joins the execution list, rf_num[i] pluses one. If the “mprf” buffer is full, no more ALU instruction is permitted.
+
+Any valid instructions will be evaluated to join “exec_\*” arrays to be executed; or join “sdbuf_\*” arrays to stay in the buffer. Besides that, some miscellaneous signals are generated to help scheduling.
+
+* chain_sdbuf_has_special: the current instruction of staying the buffer is a SPECIAL one, or not.
+
+* chain_sdbuf_mem_num: how many MEM instructions are stayed in the “sdbuf” buffer or in the execution list.
+
+* chain_exec_mem_num: how many MEM instructions are in the execution list.
+
+* chain_exec_rf_num: how many ALU instructions are in the execution list.
+
+* chain_exec_rd_list: the register list of all Rds of MEM instructions in the execution list.
+
+These signals are needed by scheduling. When each candidate is evaluated, we will get two arrays, one is for execution, the other is for staying. These two arrays of signals are written to registers.
+
+The signals: chain_find_mem[i] and chain_find_pc[i] are used to locate the recent MEM instruction. If an interrupt occurs, a major or MEM instruction is needed to be treated as an interrupt starting point. If there is no MEM instruction exist in “membuf” buffer, the one in “schedule” buffer is a perfect candidate. Any preceding ALU instructions will not bring problems when we treat the first MEM instruction of the “schedule” buffer as an interrupt starting point.
+
+### alu/alu_with_jump
+
+This module will deal with an instruction and produce necessary signals for the next corresponding modules.
+
+When an instruction arrives, it includes validity, instruction word, parameters and PC. First of all, it will fetch its Rs0 and Rs1 operands.
+
+If it is an ALU instruction, a “rd_sel” signal will indicate which register is activated to modify and “rd_data” is the new data.
+
+If it is a MEM instruction, it will give the below signals:
+
+* mem_vld: a validity signal.
+
+* mem_para: load and store method signals, it indicates how to operate the data bus. If it is a loading operation, it includes the destination register and byte,half-word, word selection signals.
+
+* mem_addr: the address signal of the loading and storing operation.
+
+* mem_wdata: the writing data of the storing operation.
+
+These are necessary signals for operation of the data bus. When they reaches the “membuf” module, they will be queued  and dealt with one by one.
+
+The last ALU module is different with the others. It will have an extra function: to deal with jump instructions. It will produce two signals: branch_vld and branch_pc.
+
+### mprf
+
+This module manages the register file. It includes reading from the register file by “alu” modules; writing to the register file by “alu” modules and “membuf” module.
+
+It has a buffer to contain writing data from the “alu” modules.  The “membuf” module will send “mem_release” signal to indicate that a MEM instruction has been retired successfully. Orders of all ALU instructions stored in this buffer will decrease 1 until it reaches 0. After that, only ALU instructions whose order is zero have possibility to write to the register file.
+
+The writing from “membuf” module happens directly because it is from a major MEM instruction. These two signals are mem_sel and mem_data.
+
+Reading from the register file includes two steps. The first step is to look up from the register file, like searching a word from a dictionary. The next step is to check whether this register is overridden by one element of the buffer, like searching an item from an erratum.
+
+### membuf
+
+Every MEM instruction from “alu” module is queued in the buffer of this module. There is only one MEM instruction as a current active one. It could operate the data bus, or write mul/div result to the register file, or start exchange of CSR and general-purpose registers.
+
+Firstly, signals from “alu” modules are screened to exclude empty ones. After that, they are queued behind ones stored.
+
+To improve the efficiency of mul/div operations, it is necessary to find out one mul instruction when it is queued between the buffer and start mul/div calculation in advance. The interaction between “membuf” and “mul” includes:
+
+* “mul” gives one number: “mul_this_order”, which indicates the number of the mul instructions. If mul_this_order is 1, it indicates the “mul” module needs the second mul instruction.
+
+* If “membuf” finds one, it will give the “mul” module: mul_vld, mul_para, mul_rs0 and mul_rs1. These signals are necessary to initialize a new mul/div calculation.
+
+* When the “mul” module finishes its new calculation, it will assert: mul_in_vld and the calculation result is in mul_in_data.
+
+* If the result is not accepted by the “membuf” module, it pluses “mul_this_order” 1 to request a new mul/div instruction. if yes, keep “mul_this_order” the same because the last mul instruction is retired with the result.
+
+* If  the “membuf” finds a new one, it continues an iteration; or waits until find a new one.
+
+If the current active instruction is a csr instruction. It will output related signals to the input ports of “sys_csr” module.
+When the “membuf” module gets a feedback signal “dmem_resp” from the data bus, it is a good chance to start the next data memory request in the same cycle. It is necessary to get two MEM instructions: one is active_\* signals, which is the current active MEM instruction; the other is alter_\* signals, which is the next of the current.
+
+### mul
+
+This module will implement mul or div operation. It costs cycles which depends on how many bits of the multiplier or quotient. It is an iteration on shift and add/subtract operations until each bit of the multiplier is dealt with or the shrinking dividend is less than the divisor.
+
+“calc_start” is a signal to start the calculation of mul/div. If one of the multipliers is zero, the divisor is zero or the dividend is less than the divisor, the calculation will never be started and “write_start” is asserted to initialize writing a buffer of the result.
+
+If the buffer is full, it will never start a new calculation until the “membuf” module retires the current active mul instruction through copying the mul/div result to the register file.
+
+### sys_csr
+
+This module is related with CSR and sytem control. Any CPU core which is declared to support RV32IMC has the common function implemented by SSRV’s modules except this one. You can customize your different core through rewriting this module and keeping other modules unmodified. Other modules will bring you the high-performance and flexible attribute. Rewriting this module will give you flexibility to adopt different application mode.
+
+This module will response with incoming system or csr instruction. If it is a csr instruction, it will write Rs to its CSR and output CSR to “csr_data”. The “membuf” module will copy “csr_data” to the register file.
+
+If it is a system instruction, it can initialize a jump operation to the target address, which is provided by one of CSR registers.
+In this module, only 7 CSR registers are implemented. They are the minimal solution to adopt with the simulation environment of SCR1. Only 3 system instruction are described to jump a target address. That is also a minimal solution.
+
+
 
 -------------------------------------
 
