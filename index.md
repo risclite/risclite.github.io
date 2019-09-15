@@ -518,6 +518,7 @@ Multiple-out |FETCH_LEN	|FETCH_LEN instructions|
 
 
 * The schedule buffer
+
 The main buffer of SSRV is used to accumulate instructions and try to send multiple instructions to be executed.
 
 The IN_LEN attribute of the buffer is “FETCH_LEN”, which means how many instructions could be supplied by its servant buffer.
