@@ -94,7 +94,7 @@ A fragment of assembly program is provided to illustrate how the parallel instru
 
 -------------------------------------
 
-### Modules of SSRV
+## Modules of SSRV
 
 SSRV is based on and inspired by SCR1 of Syntacore. SCR1 has a complete verification and development suite. It provides a solution from C files to BIN files, and systemverilog testbench files loading BIN files to feed simulation of RTL.
 
