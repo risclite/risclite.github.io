@@ -1,4 +1,4 @@
-# Super-Scalar RISCV CPU (SSRV) ------ A synthesizable solution on Super-Scalar and out-of-order
+### Super-Scalar RISCV CPU (SSRV) ------ A synthesizable solution on Super-Scalar and out-of-order
 
 [```Github Repository```](https://github.com/risclite/SuperScalar-RISCV-CPU/)     [```中文版```](https://github.com/risclite/SuperScalar-RISCV-CPU/wiki/%E4%B8%AD%E6%96%87%E5%B8%AE%E5%8A%A9%E7%BB%B4%E5%9F%BA)
 
@@ -6,7 +6,7 @@
 
 These are the main-stream technologies to improve performance of CPU cores. SSRV will provide a vivid example using these two methods on RV32IMC. RISCV is a free and open CPU architecture and it deverses higher performance design than rivials, because more and more people will devote their talent to its development.
 
-SSRV is a synthesizable verilog solution dedicated to super-scalar. SSRV tries to issue N instructions from M instructions gathered. You can assign N and M to have N parallel instructions to be executed, and M instructions to gain more possibility of out-of-order. No matter how many N and M are, SSRV will work smoothly to prove it is a solid design on its theme.
+SSRV is a synthesizable verilog solution dedicated to super-scalar. SSRV tries to issue N instructions from M instructions gathered. You can assign N and M to have N parallel instructions to be executed, and M instructions to gain more possibility of out-of-order. No matter how many N and M are, SSRV will work smoothly to prove it is a solid design on its purpose.
 
 ![diagram](/png/diagram.png)
 
