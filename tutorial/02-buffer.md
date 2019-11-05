@@ -44,8 +44,8 @@ If it doesn't match, the result of "OP2" could be qualified to go into "rfbuf". 
 It is necessary to give every element of "rfbuf" an order to make them retire gradually. The simplest way is to give every new member of "rfbuf" an order, which means how many elements exist in "mmbuf" when it enters.
 
 |-----|-----|-----|-----|------|----|--------|
-|STR0 |OP0	|OP1  |STR1	|LDR0  |OP2	|JMP0    |
-|1	  |1	|1    |2	|3	   |3	|3       |
+|STR0 |OP0  |OP1  |STR1	|LDR0  |OP2 |JMP0    |
+|1    |1    |1    |2	|3     |3   |3       |
 
 When "STR0" is waiting for its acknowledgement, "OP0" and "OP1" has its order: 1 and "OP2" has its order 3. If the data memory releases one successful message, the order of every element of "rfbuf" decreases 1 until it reaches 0. If the successful message of "STR0" comes, "OP0" and "OP1" has a new order--0, which means they have an authority to write to the register file and "OP2" has a new order--2. Then that "STR1" retires will make the order of "OP2" become 1. Until the nearest leading LSU instruction "LDR0" retires, "OP2" will have an order 0 to gain the authority to go into the register file.
 
