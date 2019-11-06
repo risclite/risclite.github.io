@@ -6,7 +6,7 @@ The basic component of SSRV is a multiple-in, multiple-out buffer, which has a c
 
 It has three parameters: IN_LEN, which defines how many elements are coming in from outside; BUF_LEN, which define the maximum elements could be accommodated; OUT_LEN, which define how many elements are going out.
 
-![Multiple-in, multiple-out buffer](/png/ProjBuffer.PNG)
+![Multiple-in, multiple-out buffer](/basic/ProjBuffer.PNG)
 
 Different parameters lead to different capabilities of the buffer. Because of unpredictable condition on processing instructions, this kind of buffer is very helpful in keeping instructions. 
 
