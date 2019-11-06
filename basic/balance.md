@@ -17,7 +17,7 @@ The OUT_LEN of the buffer is to count how many instructions to output. It is not
 |------------|----------|----------------|
 |Multiple-in |BUS_LEN   |BUS_LEN\*XLEN bits | 
 |Capacity    |INBUF_LEN	|INBUF_LEN\*BUS_LEN\*XLEN bits |
-Multiple-out |FETCH_LEN	|FETCH_LEN instructions|
+|Multiple-out |FETCH_LEN	|FETCH_LEN instructions|
 
 
 * The schedule buffer
@@ -34,7 +34,7 @@ The OUT_LEN attribute of the buffer is “EXEC_LEN”. It defines how many ALU m
 |------------|----------|----------------|
 |Multiple-in |FETCH_LEN |instruction number | 
 |Capacity    |SDBUF_LEN	|instruction number |
-Multiple-out |EXEC_LEN	|instruction number |
+|Multiple-out |EXEC_LEN	|instruction number |
 
 * The mprf buffer
 
@@ -50,7 +50,9 @@ The OUT_LEN attribute is “WRRG_LEN”. It can be assigned to “EXEC_LEN”.
 |------------|----------|----------------|
 |Multiple-in |EXEC_LEN  |instruction number | 
 |Capacity    |RFBUF_LEN	|instruction number |
-Multiple-out |WRRG_LEN	|instruction number |
+|Multiple-out |WRRG_LEN	|instruction number |
+
+Note: To make sure RFBUF_LEN is less than twice of WRRG_LEN. Since the mprf buffer and the membuf buffer dismiss instructions in the same cycle, the mprf buffer should have faster speed than the membuf buffer. Or, the LDR instruction of the membuf buffer maybe catches up some OP instruction of the mprf buffer. Default configuration is: RFBUF_LEN is 2\*EXEC_LEN, WRRG_LEN is EXEC_LEN. 
 
 * The membuf buffer
 
@@ -66,7 +68,7 @@ The OUT_LEN attribute is 1. There is only 1 MEM instruction to be retired in eac
 |------------|----------|----------------|
 |Multiple-in |EXEC_LEN  |instruction number | 
 |Capacity    |MMBUF_LEN	|instruction number |
-Multiple-out |1      	|instruction number |
+|Multiple-out |1      	|instruction number |
 
 Below are the 4 important parameters:
 
