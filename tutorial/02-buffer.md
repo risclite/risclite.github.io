@@ -17,7 +17,7 @@ There is a way to make "OP0" be executed in advance, which is a buffer for the r
 When the pipeline is stalled by the "STR0", "OP0" could be executed and there is also a chance for the next instruction: "OP1". "OP1" could be executed and its result could be placed to the "rfbuf" after the result of "OP0". It is not enough to fetch its Rs from the register file because maybe its Rs is being updated by "OP0", which means Rs of "OP1" is equal to Rd of "OP0". in this case, fetching Rs includes two steps:
 
 1. get Rs from the register file.
-2. Check every invalid elements of "rfbuf". If there is an update of Rs, replace it.
+2. Check every valid elements of "rfbuf". If there is an update of Rs, replace it.
    
 In this way, the instruction "OP" is converted to the different form: its Rd number and its result of calculation. "OP0" and "OP1" are closer to retire. They are waiting for the successful message of data memory. When it arrives, these two updates could be executed immediately. We could say that there instructions: "STR0", "OP0" and "OP1" retire in the same cycle.
 
